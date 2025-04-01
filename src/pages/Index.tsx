@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,12 +7,62 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { PlayCircle, FastForward, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import getGenerativeData from "../backend/index.js";
 
 const Index = () => {
+
+  const [genData, setGenData] = useState(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const prompt = `Please analyze this transcript and create:
+    1. Detailed bullet-point notes of the key points and concepts
+    2. A clear, concise summary in simple language that anyone can understand
+    3. present the notes in a way that is easy to read and understand use BOLD for the key points and concepts, maintain space between the bullet points and topics
+    
+    Format the response as follows:
+    
+    KEY NOTES:
+    • [bullet points here]
+    
+    SUMMARY:
+    [layman's terms summary here]
+
+    return result in JSON using below JSON Structure Schema (stricly adhere):
+
+    {
+      "NOTES": [
+        {
+          "title": "string",
+          "content": "string"
+        }
+      ],
+      "SUMMARY": "string"
+    }
+    
+    about
+    ${videoUrl}`;
+
+  const getContent = () => {
+    getGenerativeData(apiKey, prompt)
+      .then((res) => {
+        setGenData(res);
+        toast({
+          title: "Success!",
+          description: "Key Notes and Summary Generated Successfully!",
+        });
+      })
+      .catch((error) => { // Catch any errors during the API call
+        console.error("Error fetching data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to generate notes. Please check your API key and video URL.",
+          variant: "destructive",
+        });
+      });
+  };
+
 
   const handleGenerate = () => {
     if (!videoUrl || !apiKey) {
@@ -24,12 +73,11 @@ const Index = () => {
       });
       return;
     }
-    
-    // Simulate generation for demo
-    setGeneratedContent("Sample generated content...");
+
+    getContent();
     toast({
-      title: "Success!",
-      description: "Transcript and notes generated successfully.",
+      title: "Please Wait!",
+      description: "Generating Key Notes and Summary!",
     });
   };
 
@@ -45,7 +93,7 @@ const Index = () => {
           </p>
         </div>
 
-        <Card className="glass-morphism hover-scale">
+        <Card className="glass-morphism">
           <CardHeader>
             <CardTitle className="text-xl font-medium">
               Generate Your Notes
@@ -92,7 +140,7 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        {generatedContent && (
+        {genData && (
           <Card className="glass-morphism animate-fade-in">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -106,18 +154,27 @@ const Index = () => {
             <CardContent className="mt-4">
               <ScrollArea className="h-[600px] w-full rounded-md">
                 <div className="space-y-4 p-4">
-                  {/* Sample content structure */}
                   <div className="space-y-2">
                     <Badge variant="outline">KEY NOTES</Badge>
-                    <p className="text-sm leading-relaxed">
-                      Sample generated notes would appear here...
-                    </p>
+                    {genData.NOTES && (
+                      <ul>
+                        {genData.NOTES.map((note, index) => (
+                          <li key={index}>
+                            <strong>{note.title}:</strong>
+                            <br></br>
+                            <li>
+                              {note.content}
+                            </li>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <Separator />
                   <div className="space-y-2">
                     <Badge variant="outline">SUMMARY</Badge>
                     <p className="text-sm leading-relaxed">
-                      Sample summary would appear here...
+                      {genData.SUMMARY}
                     </p>
                   </div>
                 </div>
