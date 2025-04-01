@@ -75,6 +75,7 @@ const Index = () => {
     }
 
     getContent();
+    setGenData(null);
     toast({
       title: "Please Wait!",
       description: "Generating Key Notes and Summary!",
